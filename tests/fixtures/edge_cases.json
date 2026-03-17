@@ -1,0 +1,61 @@
+{
+  "empty_items": {
+    "region": {"country_code": "RU", "region_code": "RU-MOW"},
+    "currency": "RUB",
+    "items": []
+  },
+  "zero_quantity": {
+    "region": {"country_code": "RU", "region_code": "RU-MOW"},
+    "currency": "RUB",
+    "items": [
+      {
+        "id": "item-1",
+        "kind": "material",
+        "code": "concrete_b25",
+        "name": "Concrete",
+        "quantity": 0,
+        "unit": "m3",
+        "category": "concrete"
+      }
+    ]
+  },
+  "duplicate_ids": {
+    "region": {"country_code": "RU", "region_code": "RU-MOW"},
+    "currency": "RUB",
+    "items": [
+      {
+        "id": "item-1",
+        "kind": "material",
+        "code": "code1",
+        "name": "Item 1",
+        "quantity": 1,
+        "unit": "pcs",
+        "category": "cat"
+      },
+      {
+        "id": "item-1",
+        "kind": "work",
+        "code": "code2",
+        "name": "Item 2",
+        "quantity": 1,
+        "unit": "pcs",
+        "category": "cat"
+      }
+    ]
+  },
+  "unknown_unit": {
+    "region": {"country_code": "RU", "region_code": "RU-MOW"},
+    "currency": "RUB",
+    "items": [
+      {
+        "id": "item-1",
+        "kind": "material",
+        "code": "code1",
+        "name": "Item 1",
+        "quantity": 1,
+        "unit": "furlongs_per_fortnight",
+        "category": "cat"
+      }
+    ]
+  }
+}

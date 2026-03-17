@@ -1,0 +1,56 @@
+{
+  "project_id": "proj-001",
+  "region": {
+    "country_code": "RU",
+    "region_code": "RU-MOW",
+    "city": "Moscow"
+  },
+  "currency": "RUB",
+  "items": [
+    {
+      "id": "mat-001",
+      "kind": "material",
+      "code": "aerated_concrete_block_300_d500",
+      "name": "Aerated Concrete Block 300mm D500",
+      "quantity": 50.0,
+      "unit": "m3",
+      "category": "masonry"
+    },
+    {
+      "id": "mat-002",
+      "kind": "material",
+      "code": "concrete_b25",
+      "name": "Concrete B25",
+      "quantity": 20.0,
+      "unit": "m3",
+      "category": "concrete"
+    },
+    {
+      "id": "mat-003",
+      "kind": "material",
+      "code": "rebar_d12",
+      "name": "Rebar D12",
+      "quantity": 2000.0,
+      "unit": "kg",
+      "category": "steel"
+    },
+    {
+      "id": "work-001",
+      "kind": "work",
+      "code": "block_masonry",
+      "name": "Block Masonry Work",
+      "quantity": 150.0,
+      "unit": "m2",
+      "category": "masonry"
+    },
+    {
+      "id": "work-002",
+      "kind": "work",
+      "code": "foundation_concrete_work",
+      "name": "Foundation Concrete Work",
+      "quantity": 20.0,
+      "unit": "m3",
+      "category": "foundation"
+    }
+  ]
+}

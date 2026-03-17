@@ -1,0 +1,62 @@
+[
+  {
+    "code": "aerated_concrete_block_300_d500",
+    "kind": "material",
+    "unit": "m3",
+    "unit_price": 8200,
+    "currency": "RUB",
+    "country_code": "RU",
+    "region_code": "RU-MOW",
+    "category": "masonry"
+  },
+  {
+    "code": "concrete_b25",
+    "kind": "material",
+    "unit": "m3",
+    "unit_price": 6500,
+    "currency": "RUB",
+    "country_code": "RU",
+    "region_code": "RU-MOW",
+    "category": "concrete"
+  },
+  {
+    "code": "rebar_d12",
+    "kind": "material",
+    "unit": "kg",
+    "unit_price": 95,
+    "currency": "RUB",
+    "country_code": "RU",
+    "region_code": "RU-MOW",
+    "category": "steel"
+  },
+  {
+    "code": "rebar_d12",
+    "kind": "material",
+    "unit": "t",
+    "unit_price": 95000,
+    "currency": "RUB",
+    "country_code": "RU",
+    "region_code": "RU-MOW",
+    "category": "steel"
+  },
+  {
+    "code": "block_masonry",
+    "kind": "work",
+    "unit": "m2",
+    "unit_price": 2100,
+    "currency": "RUB",
+    "country_code": "RU",
+    "region_code": "RU-MOW",
+    "category": "masonry"
+  },
+  {
+    "code": "foundation_concrete_work",
+    "kind": "work",
+    "unit": "m3",
+    "unit_price": 4500,
+    "currency": "RUB",
+    "country_code": "RU",
+    "region_code": "RU-MOW",
+    "category": "foundation"
+  }
+]
