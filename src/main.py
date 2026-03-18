@@ -4,6 +4,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.middleware.api_key import ApiKeyMiddleware
 from src.api.middleware.idempotency import IdempotencyMiddleware
 from src.api.router import api_router
 
@@ -27,6 +28,7 @@ def create_app() -> FastAPI:
     # Note: idempotency is handled at the route level via the repo dependency
     # The middleware can be used as an additional layer for non-injected contexts
     app.add_middleware(IdempotencyMiddleware)
+    app.add_middleware(ApiKeyMiddleware)
 
     app.include_router(api_router)
 

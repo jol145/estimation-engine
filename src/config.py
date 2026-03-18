@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     max_concurrent_provider_requests: int = 10
     price_provider_timeout_seconds: float = 3.0
     max_job_retries: int = 2
+    api_keys: str = ""
+
+    @property
+    def api_keys_list(self) -> list[str]:
+        return [k.strip() for k in self.api_keys.split(",") if k.strip()]
 
 
 settings = Settings()
