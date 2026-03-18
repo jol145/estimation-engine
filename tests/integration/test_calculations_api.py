@@ -340,3 +340,106 @@ async def test_provider_timeout_integration(client: AsyncClient, db_session):
         assert data["items"] is not None
         for item in data["items"]:
             assert item["pricing"]["pricing_method"] in ("unpriced", "requires_manual_review")
+
+
+# ---------------------------------------------------------------------------
+# Test 6: currency conversion integration
+# ---------------------------------------------------------------------------
+
+class UsdPriceProvider(PriceProvider):
+    """Returns all prices in USD."""
+
+    async def get_prices(self, query: PriceLookupQuery) -> list[PriceEntry]:
+        return [
+            PriceEntry(
+                code=query.code,
+                kind=query.kind,
+                unit=query.unit,
+                unit_price=Decimal("100"),
+                currency="USD",
+                country_code=query.country_code,
+                region_code=query.region_code,
+                category=query.category or "",
+                provider_name="usd_provider",
+            )
+        ]
+
+    async def get_prices_by_category(self, query: PriceLookupQuery) -> list[PriceEntry]:
+        return []
+
+
+@pytest.mark.asyncio
+async def test_currency_conversion_integration(client: AsyncClient, db_session):
+    """Provider returns USD prices; request in RUB → price auto-converted via EXCHANGE_RATES."""
+    data = await _run_pipeline_with_provider(client, db_session, SAMPLE_REQUEST, UsdPriceProvider())
+
+    assert data["status"] == "completed"
+    assert data["currency"] == "RUB"
+    for item in data["items"]:
+        pricing = item["pricing"]
+        assert pricing["currency"] == "RUB"
+        # 100 USD * 92.50 = 9250 RUB
+        assert abs(pricing["average_unit_price"] - 9250.0) < 0.01
+
+
+# ---------------------------------------------------------------------------
+# Test 7: city-level pricing integration
+# ---------------------------------------------------------------------------
+
+CITY_REQUEST = {
+    "region": {
+        "country_code": "RU",
+        "region_code": "RU-MOW",
+        "city": "Moscow",
+    },
+    "currency": "RUB",
+    "items": [
+        {
+            "id": "c1",
+            "kind": "material",
+            "code": "concrete_b25",
+            "name": "Concrete B25",
+            "quantity": 1.0,
+            "unit": "m3",
+            "category": "concrete",
+        }
+    ],
+}
+
+
+class CityOnlyPriceProvider(PriceProvider):
+    """Returns prices only when query.city == 'Moscow'."""
+
+    async def get_prices(self, query: PriceLookupQuery) -> list[PriceEntry]:
+        if query.city != "Moscow":
+            return []
+        return [
+            PriceEntry(
+                code=query.code,
+                kind=query.kind,
+                unit=query.unit,
+                unit_price=Decimal("7500"),
+                currency="RUB",
+                country_code=query.country_code,
+                region_code=query.region_code,
+                city=query.city,
+                category=query.category or "",
+                provider_name="city_provider",
+            )
+        ]
+
+    async def get_prices_by_category(self, query: PriceLookupQuery) -> list[PriceEntry]:
+        return []
+
+
+@pytest.mark.asyncio
+async def test_city_level_pricing_integration(client: AsyncClient, db_session):
+    """Provider returns prices only for city=Moscow → resolution_level=city-level."""
+    data = await _run_pipeline_with_provider(client, db_session, CITY_REQUEST, CityOnlyPriceProvider())
+
+    assert data["status"] == "completed"
+    assert data["items"] is not None
+    item = data["items"][0]
+    assert item["pricing"]["pricing_method"] == "exact_match"
+    assert item["pricing"]["resolution_level"] == "city-level"
+    assert abs(item["pricing"]["average_unit_price"] - 7500.0) < 0.01
