@@ -15,6 +15,26 @@ from src.shared.units.unit_converter import UNIT_CONVERSIONS, can_convert, conve
 
 logger = structlog.get_logger(__name__)
 
+EXCHANGE_RATES: dict[tuple[str, str], Decimal] = {
+    ("USD", "RUB"): Decimal("92.50"),
+    ("EUR", "RUB"): Decimal("100.20"),
+    ("RUB", "USD"): Decimal("0.0108"),
+    ("RUB", "EUR"): Decimal("0.00998"),
+    ("USD", "EUR"): Decimal("0.923"),
+    ("EUR", "USD"): Decimal("1.083"),
+}
+
+
+def _convert_currency(price: Decimal, from_currency: str, to_currency: str) -> Decimal | None:
+    if from_currency == to_currency:
+        return price
+    key = (from_currency.upper(), to_currency.upper())
+    rate = EXCHANGE_RATES.get(key)
+    if rate is None:
+        return None
+    return price * rate
+
+
 REGIONAL_COEFFICIENTS: dict[str, Decimal] = {
     "RU-MOW": Decimal("1.15"),  # Moscow — prices ~15% above country average
     "RU-SPE": Decimal("1.10"),  # St Petersburg
@@ -89,7 +109,34 @@ class PricingService:
     ) -> PricingResult:
         """Run the 6-level pricing pipeline for a single item."""
 
-        # Level 1: Exact match - code + region_code + unit
+        # Level 1a: City-level exact match (most specific)
+        if region.city:
+            entries = await self._get_prices(
+                PriceLookupQuery(
+                    code=item.code,
+                    kind=item.kind,
+                    unit=item.unit,
+                    country_code=region.country_code,
+                    region_code=region.region_code,
+                    city=region.city,
+                    category=item.category,
+                )
+            )
+            if entries:
+                return self._compute_result(
+                    entries,
+                    item,
+                    currency,
+                    method="exact_match",
+                    confidence="high",
+                    match_path=f"{region.country_code}/{region.region_code}/{region.city}/{item.unit}",
+                    fallback_reason=None,
+                    unit_converted=False,
+                    original_unit=None,
+                    resolution_level="city-level",
+                )
+
+        # Level 1b: Region-level exact match
         entries = await self._get_prices(
             PriceLookupQuery(
                 code=item.code,
@@ -150,6 +197,7 @@ class PricingService:
                         unit=to_unit,
                         country_code=region.country_code,
                         region_code=region.region_code,
+                        city=region.city,
                         category=item.category,
                     )
                 )
@@ -198,6 +246,7 @@ class PricingService:
                 unit=item.unit,
                 country_code=region.country_code,
                 region_code=region.region_code,
+                city=region.city,
                 category=item.category,
             )
         )
@@ -306,6 +355,14 @@ class PricingService:
 
         # Use currency from entries if available, else use requested currency
         result_currency = entries[0].currency if entries else currency
+
+        # Convert currency if provider returned a different currency
+        if result_currency != currency:
+            converted = _convert_currency(avg_price, result_currency, currency)
+            if converted is not None:
+                avg_price = converted
+                line_total = avg_price * item.quantity
+                result_currency = currency
 
         return PricingResult(
             average_unit_price=avg_price,
