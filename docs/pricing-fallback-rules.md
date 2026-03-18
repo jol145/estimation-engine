@@ -6,7 +6,10 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Уровень 1: Exact Match (code + region + unit)              │
+│ Уровень 1a: City Match (code + region + city + unit)       │
+│ ──► найдено? → STOP, confidence: high                      │
+├─────────────────────────────────────────────────────────────┤
+│ Уровень 1b: Region Match (code + region + unit)            │
 │ ──► найдено? → STOP, confidence: high                      │
 ├─────────────────────────────────────────────────────────────┤
 │ Уровень 2: Country Fallback (code + country + unit)        │
@@ -26,11 +29,37 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
+**Конверсия валют:** На каждом уровне, если провайдер вернул цену в валюте, отличной от запрошенной, она автоматически конвертируется через `_convert_currency()`. Поддерживаемые пары: USD↔RUB, EUR↔RUB, USD↔EUR. Курсы захардкожены для MVP.
+
 ---
 
-## Уровень 1: Exact Match
+## Уровень 1a: City Match
 
-**Что ищем:** Запись в price_catalog с точным совпадением `code + kind + unit + country_code + region_code`
+**Что ищем:** Запись с точным совпадением `code + kind + unit + country_code + region_code + city`. Выполняется **только если в запросе указан `city`**.
+
+**Условие запроса:**
+```sql
+WHERE code = :code
+  AND kind = :kind
+  AND unit = :unit
+  AND country_code = :country_code
+  AND region_code = :region_code
+  AND city = :city
+```
+
+| Поле               | Значение                               |
+|--------------------|----------------------------------------|
+| `pricing_method`   | `exact_match`                          |
+| `confidence`       | `high`                                 |
+| `match_path`       | `{country}/{region}/{city}/{unit}`     |
+| `fallback_reason`  | `null`                                 |
+| `resolution_level` | `city-level`                           |
+
+---
+
+## Уровень 1b: Region Match
+
+**Что ищем:** Запись с точным совпадением `code + kind + unit + country_code + region_code` (без city). Выполняется всегда после 1a (или сразу, если city не указан).
 
 **Условие запроса:**
 ```sql
@@ -41,12 +70,13 @@ WHERE code = :code
   AND region_code = :region_code
 ```
 
-| Поле             | Значение                    |
-|------------------|-----------------------------|
-| `pricing_method` | `exact_match`               |
-| `confidence`     | `high`                      |
-| `match_path`     | `{country}/{region}/{unit}` |
-| `fallback_reason`| `null`                      |
+| Поле               | Значение                    |
+|--------------------|-----------------------------|
+| `pricing_method`   | `exact_match`               |
+| `confidence`       | `high`                      |
+| `match_path`       | `{country}/{region}/{unit}` |
+| `fallback_reason`  | `null`                      |
+| `resolution_level` | `region-level`              |
 
 ---
 
@@ -178,11 +208,12 @@ WHERE category = :category
 
 ## Сводная таблица уровней
 
-| Уровень | Метод                | Confidence | Что проверяем                                |
-|---------|----------------------|------------|----------------------------------------------|
-| 1       | `exact_match`        | high       | code + region + unit                         |
-| 2       | `country_fallback`   | medium     | code + country + unit                        |
-| 3       | `unit_conversion`    | medium     | code + конвертируемая единица                |
-| 4       | `category_fallback`  | low        | category + region                            |
-| 5       | `coefficient_fallback` | low      | category + country × региональный коэффициент |
-| 6       | `unpriced`           | none       | цена не найдена                              |
+| Уровень | Метод                  | Confidence | resolution_level    | Что проверяем                                  |
+|---------|------------------------|------------|---------------------|------------------------------------------------|
+| 1a      | `exact_match`          | high       | `city-level`        | code + region + city + unit (только если city задан) |
+| 1b      | `exact_match`          | high       | `region-level`      | code + region + unit                           |
+| 2       | `country_fallback`     | medium     | `country-level`     | code + country + unit                          |
+| 3       | `unit_conversion`      | medium     | `country-level`     | code + конвертируемая единица                  |
+| 4       | `category_fallback`    | low        | `region-level`      | category + region                              |
+| 5       | `coefficient_fallback` | low        | `coefficient-based` | category + country × региональный коэффициент  |
+| 6       | `unpriced`             | none       | `null`              | цена не найдена                                |

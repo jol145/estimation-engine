@@ -33,6 +33,7 @@ http://localhost:8000
 ```json
 {
   "project_id": "proj-123",
+  "source_id": "src-456",
   "region": {
     "country_code": "RU",
     "region_code": "RU-MOW",
@@ -62,6 +63,19 @@ http://localhost:8000
   "request_meta": {}
 }
 ```
+
+**Поля items:**
+
+**Поля верхнего уровня запроса:**
+
+| Поле         | Тип    | Обязательное | Описание                                    |
+|--------------|--------|--------------|---------------------------------------------|
+| project_id   | string | нет          | Идентификатор проекта во внешней системе    |
+| source_id    | string | нет          | Идентификатор источника запроса             |
+| region       | object | да           | Регион расчёта (country_code, region_code, city) |
+| currency     | string | да           | Валюта (ISO 4217, например RUB, USD, EUR)  |
+| items        | array  | да           | Список позиций спецификации (min 1)         |
+| request_meta | object | нет          | Произвольные метаданные запроса             |
 
 **Поля items:**
 
@@ -193,9 +207,11 @@ http://localhost:8000
 | region           | object\|null | Регион расчёта (`country_code`, `region_code`, `city`) |
 | currency         | string\|null | Валюта расчёта                                    |
 | assumptions      | list[string] | Текстовые пояснения по fallback-позициям          |
-| pricing.resolution_level | string\|null | Уровень разрешения: `region-level`, `country-level`, `coefficient-based` |
+| pricing.resolution_level | string\|null | Уровень разрешения: `city-level`, `region-level`, `country-level`, `coefficient-based` |
 | pricing.sources_queried  | list[string] | Имена провайдеров, вернувших цену           |
 | pricing.pricing_method   | string | Включает `requires_manual_review` — единица не конвертируема |
+
+> **Конверсия валют:** Если провайдер вернул цену в валюте, отличной от запрошенной, цена автоматически конвертируется. Поддерживаемые пары: USD↔RUB, EUR↔RUB, USD↔EUR.
 
 **Пример ответа (200, статус running):**
 
