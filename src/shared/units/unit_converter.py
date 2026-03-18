@@ -16,6 +16,9 @@ UNIT_CONVERSIONS: dict[tuple[str, str], Decimal] = {
     ("m3_solid", "m3"): Decimal("1"),
     ("m3", "m3_loose"): Decimal("1.2"),
     ("m3_loose", "m3"): Decimal("0.833"),
+    # Bag conversions (standard cement bag = 25 kg)
+    ("bag", "kg"): Decimal("25"),
+    ("kg", "bag"): Decimal("0.04"),
 }
 
 

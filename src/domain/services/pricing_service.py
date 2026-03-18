@@ -30,6 +30,7 @@ PricingMethod = Literal[
     "category_fallback",
     "coefficient_fallback",
     "unpriced",
+    "requires_manual_review",
 ]
 
 Confidence = Literal["high", "medium", "low", "none"]
@@ -50,6 +51,8 @@ class PricingResult:
     unit_converted: bool
     original_unit: str | None
     line_total: Decimal
+    resolution_level: str | None = None
+    sources_queried: list[str] | None = None
 
 
 class PricingService:
@@ -108,6 +111,7 @@ class PricingService:
                 fallback_reason=None,
                 unit_converted=False,
                 original_unit=None,
+                resolution_level="region-level",
             )
 
         # Level 2: Country match - code + country_code + unit (no region filter)
@@ -132,6 +136,7 @@ class PricingService:
                 fallback_reason="no_regional_price",
                 unit_converted=False,
                 original_unit=None,
+                resolution_level="country-level",
             )
 
         # Level 3: Unit conversion - try convertible units
@@ -182,6 +187,7 @@ class PricingService:
                         fallback_reason="unit_converted",
                         unit_converted=True,
                         original_unit=to_unit,
+                        resolution_level="country-level",
                     )
 
         # Level 4: Category fallback - same category in same region
@@ -206,6 +212,7 @@ class PricingService:
                 fallback_reason="no_exact_code_match",
                 unit_converted=False,
                 original_unit=None,
+                resolution_level="region-level",
             )
 
         # Level 5: Coefficient fallback — country-average price * regional coefficient
@@ -237,9 +244,31 @@ class PricingService:
                 fallback_reason="regional_coefficient_applied",
                 unit_converted=False,
                 original_unit=None,
+                resolution_level="coefficient-based",
             )
 
-        # Level 6: Unpriced
+        # Level 6: Unpriced (or requires_manual_review for non-convertible exotic units)
+        basic_units = {"pcs", "m", "m2", "m3", "kg", "t", "l"}
+        has_conversions = any(fu == item.unit for (fu, _) in UNIT_CONVERSIONS)
+        if not has_conversions and item.unit not in basic_units:
+            return PricingResult(
+                average_unit_price=Decimal("0"),
+                currency=currency,
+                price_unit=item.unit,
+                sources_count=0,
+                min_unit_price=None,
+                max_unit_price=None,
+                pricing_method="requires_manual_review",
+                confidence="none",
+                match_path=None,
+                fallback_reason="unit_not_convertible",
+                unit_converted=False,
+                original_unit=None,
+                line_total=Decimal("0"),
+                resolution_level=None,
+                sources_queried=[],
+            )
+
         return PricingResult(
             average_unit_price=Decimal("0"),
             currency=currency,
@@ -254,6 +283,8 @@ class PricingService:
             unit_converted=False,
             original_unit=None,
             line_total=Decimal("0"),
+            resolution_level=None,
+            sources_queried=[],
         )
 
     def _compute_result(
@@ -267,6 +298,7 @@ class PricingService:
         fallback_reason: str | None,
         unit_converted: bool,
         original_unit: str | None,
+        resolution_level: str | None = None,
     ) -> PricingResult:
         prices = [e.unit_price for e in entries]
         avg_price = sum(prices) / len(prices)
@@ -289,4 +321,6 @@ class PricingService:
             unit_converted=unit_converted,
             original_unit=original_unit,
             line_total=line_total,
+            resolution_level=resolution_level,
+            sources_queried=[e.provider_name for e in entries if hasattr(e, "provider_name")],
         )

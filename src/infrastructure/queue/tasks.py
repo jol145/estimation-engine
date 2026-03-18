@@ -66,7 +66,9 @@ async def _run_calculation_async(task: Any, calculation_id: str) -> None:
     try:
         async with AsyncSessionLocal() as session:
             repo = CalculationRepository(session)
-            price_provider = StaticPriceProvider(session)
+            from src.infrastructure.providers.price_aggregator import PriceAggregator
+            static_provider = StaticPriceProvider(session)
+            price_provider = PriceAggregator(providers=[static_provider])
             service = CalculationService(repo, price_provider)
             await service.run_pipeline(calculation_id)
 

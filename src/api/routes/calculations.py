@@ -124,6 +124,8 @@ async def get_calculation(
             response.items = [PricedItemOutput(**item) for item in result.items]
             response.assumptions = result.assumptions
             response.diagnostics = result.diagnostics
+            response.region = result.diagnostics.get("region") if result.diagnostics else None
+            response.currency = result.summary.get("currency") if result.summary else None
 
     return response
 

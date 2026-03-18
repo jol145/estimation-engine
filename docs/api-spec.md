@@ -137,37 +137,65 @@ http://localhost:8000
   "completed_at": "2024-01-15T12:00:03Z",
   "cancelled_at": null,
   "failed_at": null,
+  "region": {"country_code": "RU", "region_code": "RU-MOW", "city": "Moscow"},
+  "currency": "RUB",
   "summary": {
-    "total": "1350000.00",
+    "grand_total": 1350000.0,
+    "materials_total": 1125000.0,
+    "works_total": 225000.0,
     "currency": "RUB",
-    "priced_count": 2,
-    "unpriced_count": 0,
-    "high_confidence_count": 1,
-    "medium_confidence_count": 1,
-    "low_confidence_count": 0
+    "total_items": 2,
+    "priced_items": 2,
+    "fallback_items": 0,
+    "unpriced_items": 0
   },
   "items": [
     {
       "id": "item-1",
+      "kind": "material",
       "code": "aerated_concrete_block_300_d500",
       "name": "Газобетонный блок D500 300мм",
       "quantity": 9,
       "unit": "m3",
-      "unit_price": "125000.00",
-      "line_total": "1125000.00",
-      "currency": "RUB",
-      "pricing_method": "exact_match",
-      "confidence": "high",
-      "match_path": "RU/RU-MOW/m3",
-      "fallback_reason": null,
-      "unit_converted": false,
-      "original_unit": null
+      "pricing": {
+        "average_unit_price": 125000.0,
+        "currency": "RUB",
+        "price_unit": "m3",
+        "sources_count": 1,
+        "min_unit_price": 125000.0,
+        "max_unit_price": 125000.0,
+        "pricing_method": "exact_match",
+        "confidence": "high",
+        "match_path": "RU/RU-MOW/m3",
+        "fallback_reason": null,
+        "unit_converted": false,
+        "original_unit": null,
+        "resolution_level": "region-level",
+        "sources_queried": ["static_provider"]
+      },
+      "totals": {"line_total": 1125000.0}
     }
   ],
-  "assumptions": [],
-  "diagnostics": {}
+  "assumptions": ["Цены приведены к валюте RUB"],
+  "diagnostics": {
+    "pipeline_steps": ["validating_input", "normalizing_units", "resolving_region",
+                       "pricing_material_items", "pricing_work_items",
+                       "aggregating_totals", "finalizing_result"],
+    "region": {"country_code": "RU", "region_code": "RU-MOW", "city": "Moscow"}
+  }
 }
 ```
+
+**Новые поля в ответе (статус completed):**
+
+| Поле             | Тип          | Описание                                          |
+|------------------|--------------|---------------------------------------------------|
+| region           | object\|null | Регион расчёта (`country_code`, `region_code`, `city`) |
+| currency         | string\|null | Валюта расчёта                                    |
+| assumptions      | list[string] | Текстовые пояснения по fallback-позициям          |
+| pricing.resolution_level | string\|null | Уровень разрешения: `region-level`, `country-level`, `coefficient-based` |
+| pricing.sources_queried  | list[string] | Имена провайдеров, вернувших цену           |
+| pricing.pricing_method   | string | Включает `requires_manual_review` — единица не конвертируема |
 
 **Пример ответа (200, статус running):**
 

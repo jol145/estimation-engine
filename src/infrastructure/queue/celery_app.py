@@ -21,6 +21,7 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     task_acks_late=True,
     task_reject_on_worker_lost=True,
+    worker_concurrency=settings.max_concurrent_jobs,
     beat_schedule={
         "recover-stale-jobs": {
             "task": "src.infrastructure.queue.cleanup.recover_stale_jobs",

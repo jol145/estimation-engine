@@ -116,3 +116,16 @@ def test_currency_from_first_item():
     ]
     result = aggregate_results(items)
     assert result.currency == "USD"
+
+
+def test_mixed_priced_and_unpriced_items():
+    items = [
+        make_priced_item("m1", "material", 5000.0, "exact_match", "high"),
+        make_priced_item("m2", "material", 3000.0, "category_fallback", "low"),
+        make_priced_item("m3", "material", 0.0, "unpriced", "none"),
+    ]
+    result = aggregate_results(items)
+    assert result.priced_items == 2
+    assert result.unpriced_items == 1
+    assert result.total_items == 3
+    assert result.grand_total == Decimal("8000.0")

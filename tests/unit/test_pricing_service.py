@@ -205,6 +205,35 @@ async def test_coefficient_fallback_level5():
     assert result.average_unit_price == Decimal("1150")
 
 
+class SlowProvider(PriceProvider):
+    """Mock provider that always times out."""
+
+    async def get_prices(self, query: PriceLookupQuery) -> list:
+        import asyncio
+        await asyncio.sleep(10)
+        return []
+
+    async def get_prices_by_category(self, query: PriceLookupQuery) -> list:
+        import asyncio
+        await asyncio.sleep(10)
+        return []
+
+
+@pytest.mark.asyncio
+async def test_price_provider_timeout():
+    """Slow provider should result in unpriced (timeout treated as no price found)."""
+    service = PricingService(SlowProvider())
+    item = make_item(code="any_code", unit="pcs", category="any_cat")
+    region = make_region()
+
+    result = await service.price_item(item, region, "RUB")
+
+    # All levels time out → unpriced (pcs is a basic unit, no requires_manual_review)
+    assert result.pricing_method == "unpriced"
+    assert result.confidence == "none"
+    assert result.line_total == 0
+
+
 @pytest.mark.asyncio
 async def test_multiple_sources_averages_price():
     """Multiple price entries should be averaged."""

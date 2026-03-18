@@ -69,6 +69,7 @@ class CalculationRequest(BaseModel):
     )
 
     project_id: str | None = None
+    source_id: str | None = None
     region: RegionInput
     currency: str = Field(..., min_length=3, max_length=3)
     items: list[SpecificationItemInput] = Field(..., min_length=1)

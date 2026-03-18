@@ -20,12 +20,15 @@ class PricingInfoOutput(BaseModel):
         "category_fallback",
         "coefficient_fallback",
         "unpriced",
+        "requires_manual_review",
     ]
     confidence: Literal["high", "medium", "low", "none"]
     match_path: str | None = None
     fallback_reason: str | None = None
     unit_converted: bool = False
     original_unit: str | None = None
+    resolution_level: str | None = None
+    sources_queried: list[str] | None = None
 
 
 class TotalsOutput(BaseModel):
@@ -75,7 +78,9 @@ class CalculationResultResponse(BaseModel):
     status: str
     summary: SummaryOutput | None = None
     items: list[PricedItemOutput] | None = None
-    assumptions: list[dict[str, Any]] | None = None
+    region: dict | None = None
+    currency: str | None = None
+    assumptions: list[str] | None = None
     diagnostics: dict[str, Any] | None = None
     progress_percent: int = 0
     current_step: str | None = None

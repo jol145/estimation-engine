@@ -206,18 +206,23 @@ class CalculationService:
                 "unpriced_items": summary_data.unpriced_items,
             }
 
-            assumptions: list[dict[str, Any]] = []
+            assumptions: list[str] = []
             for item in all_priced:
                 pricing = item.get("pricing", {})
-                if pricing.get("pricing_method") != "exact_match":
-                    assumptions.append(
-                        {
-                            "item_id": item["id"],
-                            "method": pricing.get("pricing_method"),
-                            "reason": pricing.get("fallback_reason"),
-                            "confidence": pricing.get("confidence"),
-                        }
-                    )
+                if pricing.get("pricing_method") == "category_fallback":
+                    assumptions.append(f"Для позиции {item['id']} ({item['name']}) использован fallback до категории")
+                elif pricing.get("pricing_method") == "coefficient_fallback":
+                    assumptions.append(f"Для позиции {item['id']} ({item['name']}) использован региональный коэффициент")
+                elif pricing.get("pricing_method") == "country_fallback":
+                    assumptions.append(f"Для позиции {item['id']} ({item['name']}) использован fallback до страны")
+                elif pricing.get("pricing_method") == "unit_conversion":
+                    assumptions.append(f"Для позиции {item['id']} ({item['name']}) выполнена конверсия единиц из {pricing.get('original_unit')}")
+                elif pricing.get("pricing_method") == "unpriced":
+                    assumptions.append(f"Позиция {item['id']} ({item['name']}) не оценена — цена не найдена")
+                elif pricing.get("pricing_method") == "requires_manual_review":
+                    assumptions.append(f"Позиция {item['id']} ({item['name']}) требует ручной проверки — единица не конвертируема")
+            if currency:
+                assumptions.append(f"Цены приведены к валюте {currency}")
 
             await self.repository.save_result(
                 calculation_id=calculation_id,
@@ -278,6 +283,8 @@ def _build_priced_item(item: SpecificationItem, pricing_result: Any) -> dict[str
             "fallback_reason": pricing_result.fallback_reason,
             "unit_converted": pricing_result.unit_converted,
             "original_unit": pricing_result.original_unit,
+            "resolution_level": pricing_result.resolution_level,
+            "sources_queried": pricing_result.sources_queried,
         },
         "totals": {
             "line_total": float(pricing_result.line_total),

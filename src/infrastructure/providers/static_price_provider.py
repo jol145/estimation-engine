@@ -19,7 +19,36 @@ class StaticPriceProvider(PriceProvider):
         self.session = session
 
     async def get_prices(self, query: PriceLookupQuery) -> list[PriceEntry]:
-        """Fetch prices by code, kind, unit, and region."""
+        """Fetch prices by code, kind, unit, and region. Tries city-level first if city is provided."""
+        # City-level search (most specific)
+        if query.region_code and query.city:
+            stmt_city = select(PriceCatalog).where(
+                PriceCatalog.code == query.code,
+                PriceCatalog.kind == query.kind,
+                PriceCatalog.unit == query.unit,
+                PriceCatalog.country_code == query.country_code,
+                PriceCatalog.region_code == query.region_code,
+                PriceCatalog.city == query.city,
+            )
+            result_city = await self.session.execute(stmt_city)
+            rows_city = result_city.scalars().all()
+            if rows_city:
+                return [
+                    PriceEntry(
+                        code=row.code,
+                        kind=row.kind,
+                        unit=row.unit,
+                        unit_price=Decimal(str(row.unit_price)),
+                        currency=row.currency,
+                        country_code=row.country_code,
+                        region_code=row.region_code,
+                        city=row.city,
+                        provider_name=row.provider_name,
+                        category=row.category,
+                    )
+                    for row in rows_city
+                ]
+
         stmt = select(PriceCatalog).where(
             PriceCatalog.code == query.code,
             PriceCatalog.kind == query.kind,

@@ -11,7 +11,7 @@ from src.domain.interfaces.price_provider import PriceEntry, PriceLookupQuery, P
 logger = structlog.get_logger(__name__)
 
 
-class PriceAggregator:
+class PriceAggregator(PriceProvider):
     """Aggregates prices from multiple providers with concurrency control."""
 
     def __init__(self, providers: list[PriceProvider]) -> None:
