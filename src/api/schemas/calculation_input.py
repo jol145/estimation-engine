@@ -21,6 +21,18 @@ class SpecificationItemInput(BaseModel):
     category: str = Field(..., min_length=1)
     metadata: dict[str, Any] | None = None
 
+    @field_validator("unit")
+    @classmethod
+    def validate_unit(cls, v: str) -> str:
+        from src.shared.units.canonical_units import CANONICAL_UNITS, UNIT_ALIASES
+        unit_lower = v.lower().strip()
+        if unit_lower in CANONICAL_UNITS or unit_lower in UNIT_ALIASES or v in CANONICAL_UNITS:
+            return v
+        supported = ", ".join(sorted(CANONICAL_UNITS))
+        raise ValueError(
+            f"Unsupported unit '{v}'. Supported units: {supported} (and their aliases)."
+        )
+
 
 class CalculationRequest(BaseModel):
     model_config = ConfigDict(
@@ -61,6 +73,17 @@ class CalculationRequest(BaseModel):
     currency: str = Field(..., min_length=3, max_length=3)
     items: list[SpecificationItemInput] = Field(..., min_length=1)
     request_meta: dict[str, Any] | None = None
+
+    @field_validator("currency")
+    @classmethod
+    def validate_currency(cls, v: str) -> str:
+        from src.domain.services.normalization_service import VALID_CURRENCIES
+        if v.upper().strip() not in VALID_CURRENCIES:
+            supported = ", ".join(sorted(VALID_CURRENCIES))
+            raise ValueError(
+                f"Unsupported currency '{v}'. Supported currencies: {supported}"
+            )
+        return v
 
     @field_validator("items")
     @classmethod
